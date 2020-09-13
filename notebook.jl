@@ -115,11 +115,13 @@ begin
 	i = 2
 	
 	if i==1
+		filename = "monkey"
 		large_image = load("monkey.jpg")
-		image = imresize(large_image; ratio=0.1)
+		image = imresize(large_image; ratio=0.15)
 	elseif i==2
+		filename = "lena"
 		large_image = load("lena.jpg")
-		image = imresize(large_image; ratio=0.2)
+		image = imresize(large_image; ratio=0.35)
 	end
 	
 	#image = Gray.(image)
@@ -137,8 +139,8 @@ md"### Initializing filter"
 
 # ╔═╡ 820976ec-f476-11ea-0113-d909496fa398
 begin
-	#kernel = Kernel_uniform((7, 7))
-	kernel = Kernel.gaussian((4, 4))
+	#kernel = Kernel_uniform((3, 3))
+	kernel = Kernel.gaussian((3, 3))
 	
 	pad = Pad(:replicate, get_pad(kernel))
 	#pad = Fill(0, size(kernel))
@@ -199,12 +201,16 @@ function get_original(image, kernel, pad=Pad(:replicate, get_pad(kernel)))
 	
 	if mono
 		channel = channelview(image)
-		return colorview(Gray, reshape(matrix\vec(channel), size(image)))
+		estim = matrix\vec(channel)
+		estim = [(x>1) ? 1 : (x<0) ? 0 : x for x in estim]	# image values in [0, 1]
+		return Gray.(reshape(estim, size(image)))
 	else
 		channels = channelview(image)
 		new_image = zeros(size(channels))
 		for i=1:3
-			new_image[i, :, :] = matrix\vec(channels[i, :, :])
+			estim = matrix\vec(channels[i, :, :])
+			estim = [(x>1) ? 1 : (x<0) ? 0 : x for x in estim] # in [0, 1]
+			new_image[i, :, :] = estim
 		end
 		return colorview(RGB, new_image)
 	end
@@ -238,18 +244,26 @@ begin
 	else
 		estimated_kernel = Kernel.gaussian((3, 3))
 		#estimated_kernel = Kernel_uniform((7, 7))
-		#estimated_pad = Fill(0, get_pad(estimated_kernel))
-		estimated_pad = Pad(:replicate, get_pad(estimated_kernel))
+		estimated_pad = Fill(0, get_pad(estimated_kernel))
+		#estimated_pad = Pad(:replicate, get_pad(estimated_kernel))
 	end
 	
-	estimated = get_original(filtered_pad, estimated_kernel, estimated_pad)
+	recovered = get_original(filtered_pad, estimated_kernel, estimated_pad)
 end
 
 # ╔═╡ 68b18282-f5bd-11ea-1801-933fb61400ab
 md"#### Original | Filtered | Recovered"
 
 # ╔═╡ 4eb55d58-f514-11ea-064c-2b8a08b3c1eb
-[image filtered_pad estimated]
+[image filtered_pad recovered]
+
+# ╔═╡ 18642c9c-f5bf-11ea-2d7f-0956bb770cc7
+begin
+	save(filename * "_original.jpg", image)
+	save(filename * "_blurred.jpg", filtered_pad)
+	save(filename * "_recovered.jpg", recovered)
+	md"Files saved"
+end
 
 # ╔═╡ Cell order:
 # ╟─045fc73c-f5bb-11ea-210d-c3a88c7b5c08
@@ -278,4 +292,5 @@ md"#### Original | Filtered | Recovered"
 # ╟─52ae79ae-f5bd-11ea-1d9b-a5963c9bcd16
 # ╠═4bd86730-f512-11ea-1c03-bfd6d008e37a
 # ╟─68b18282-f5bd-11ea-1801-933fb61400ab
-# ╟─4eb55d58-f514-11ea-064c-2b8a08b3c1eb
+# ╠═4eb55d58-f514-11ea-064c-2b8a08b3c1eb
+# ╠═18642c9c-f5bf-11ea-2d7f-0956bb770cc7
