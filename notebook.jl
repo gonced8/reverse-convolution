@@ -36,74 +36,6 @@ end
 # ╔═╡ e6b903c2-f5bc-11ea-0c2c-03e099517d90
 md"### Convolution and Reverse"
 
-# ╔═╡ 0966b046-f5bc-11ea-355e-a360060c4753
-md"old functions inside"
-#=
-begin
-	function get_b(img, f, pad, mat, idx)
-		pad_size = get_pad(f)
-
-		if pad=="replicate"
-			img_padded = padarray(img, Pad(:replicate,pad_size))
-			img_padded[1:end-pad_size[1], 1:end-pad_size[2]] .= 0
-		else
-			return 0
-		end
-
-		mono = (length(size(channelview(img)))==2)
-
-		if mono
-			b = mat*vec(img)
-			return reshape(b[idx], size(img))
-		else
-			channels = channelview(img)
-			b = zeros(size(img))
-			for i=1:3
-				b_i = mat*vec(channels[i, :, :])
-				b[i, :, :] = reshape(b_i[idx], size(img))
-			end
-			return colorview(RGB, b)
-		end
-	end
-
-	function f2mat2(img, f, pad="zero")
-		# https://stackoverflow.com/questions/16798888/2-d-convolution-as-a-matrix-matrix-multiplication
-
-		pad_size = get_pad(f)
-		mask = padarray(fill(true, size(img)), Fill(false, pad_size))
-
-		input_shape = size(mask)
-		output_shape = input_shape .- size(f) .+ (1, 1)
-		input_size = prod(input_shape)
-		output_size = prod(output_shape)
-
-		mat = sparse([], [], Float64[], input_size, output_size)
-
-		delta = input_shape[1]-size(f, 1)
-		f_flat = sparse([], [], Float64[], input_shape[1], size(f, 2))
-
-		f_flat[1:size(f, 1), :] = parent(f)
-		f_flat = sparsevec(f_flat)[1:end-delta]
-
-		delta = input_shape[1] - size(f, 1) + 1
-
-		for i=1:size(mat, 2)÷delta, j=1:delta
-			ii = (i-1)*input_shape[1]+j
-			jj = (i-1)*delta+j
-			mat[ii:ii+length(f_flat)-1, jj] = f_flat
-		end
-
-		mask_flat = vec(mask)
-		#b = get_b(img, f, pad, mat, mask_flat)
-
-		idx = [i for i=1:length(mask) if mask[i]]
-		mat = mat[idx, :]
-
-		return mat'
-	end
-end
-=#
-
 # ╔═╡ fb654aee-f5bc-11ea-35f4-3397194c8722
 md"## Example"
 
@@ -244,8 +176,8 @@ begin
 	else
 		estimated_kernel = Kernel.gaussian((3, 3))
 		#estimated_kernel = Kernel_uniform((7, 7))
-		estimated_pad = Fill(0, get_pad(estimated_kernel))
-		#estimated_pad = Pad(:replicate, get_pad(estimated_kernel))
+		#estimated_pad = Fill(0, get_pad(estimated_kernel))
+		estimated_pad = Pad(:replicate, get_pad(estimated_kernel))
 	end
 	
 	recovered = get_original(filtered_pad, estimated_kernel, estimated_pad)
@@ -265,6 +197,74 @@ begin
 	md"Files saved"
 end
 
+# ╔═╡ d6714f18-f60b-11ea-15b6-517d7006d9e4
+md"old functions inside"
+#=
+begin
+	function get_b(img, f, pad, mat, idx)
+		pad_size = get_pad(f)
+
+		if pad=="replicate"
+			img_padded = padarray(img, Pad(:replicate,pad_size))
+			img_padded[1:end-pad_size[1], 1:end-pad_size[2]] .= 0
+		else
+			return 0
+		end
+
+		mono = (length(size(channelview(img)))==2)
+
+		if mono
+			b = mat*vec(img)
+			return reshape(b[idx], size(img))
+		else
+			channels = channelview(img)
+			b = zeros(size(img))
+			for i=1:3
+				b_i = mat*vec(channels[i, :, :])
+				b[i, :, :] = reshape(b_i[idx], size(img))
+			end
+			return colorview(RGB, b)
+		end
+	end
+
+	function f2mat2(img, f, pad="zero")
+		# https://stackoverflow.com/questions/16798888/2-d-convolution-as-a-matrix-matrix-multiplication
+
+		pad_size = get_pad(f)
+		mask = padarray(fill(true, size(img)), Fill(false, pad_size))
+
+		input_shape = size(mask)
+		output_shape = input_shape .- size(f) .+ (1, 1)
+		input_size = prod(input_shape)
+		output_size = prod(output_shape)
+
+		mat = sparse([], [], Float64[], input_size, output_size)
+
+		delta = input_shape[1]-size(f, 1)
+		f_flat = sparse([], [], Float64[], input_shape[1], size(f, 2))
+
+		f_flat[1:size(f, 1), :] = parent(f)
+		f_flat = sparsevec(f_flat)[1:end-delta]
+
+		delta = input_shape[1] - size(f, 1) + 1
+
+		for i=1:size(mat, 2)÷delta, j=1:delta
+			ii = (i-1)*input_shape[1]+j
+			jj = (i-1)*delta+j
+			mat[ii:ii+length(f_flat)-1, jj] = f_flat
+		end
+
+		mask_flat = vec(mask)
+		#b = get_b(img, f, pad, mat, mask_flat)
+
+		idx = [i for i=1:length(mask) if mask[i]]
+		mat = mat[idx, :]
+
+		return mat'
+	end
+end
+=#
+
 # ╔═╡ Cell order:
 # ╟─045fc73c-f5bb-11ea-210d-c3a88c7b5c08
 # ╟─ce1dd8fc-f5bb-11ea-3cf4-4b20b1250bb1
@@ -273,7 +273,6 @@ end
 # ╟─f284c890-f5bb-11ea-30e8-abbc1f458cec
 # ╟─fcae7582-f5bb-11ea-2b79-43f8cd3178c3
 # ╟─e6b903c2-f5bc-11ea-0c2c-03e099517d90
-# ╟─0966b046-f5bc-11ea-355e-a360060c4753
 # ╟─110e881e-f5bc-11ea-0a20-3dabe51098a3
 # ╟─9966750a-f5bc-11ea-2402-f16ff519f56d
 # ╟─a053dae2-f5bc-11ea-11fb-7115b2489efa
@@ -293,4 +292,5 @@ end
 # ╠═4bd86730-f512-11ea-1c03-bfd6d008e37a
 # ╟─68b18282-f5bd-11ea-1801-933fb61400ab
 # ╠═4eb55d58-f514-11ea-064c-2b8a08b3c1eb
-# ╠═18642c9c-f5bf-11ea-2d7f-0956bb770cc7
+# ╟─18642c9c-f5bf-11ea-2d7f-0956bb770cc7
+# ╟─d6714f18-f60b-11ea-15b6-517d7006d9e4
