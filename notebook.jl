@@ -4,61 +4,40 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 9ba38cfe-f46d-11ea-039b-2d11eb144c98
+# ╔═╡ 88cfc46c-f46d-11ea-21df-59c027e4b86b
 begin
 	import Pkg
 	Pkg.activate(mktempdir())
-end
-
-# ╔═╡ 88cfc46c-f46d-11ea-21df-59c027e4b86b
-begin
 	Pkg.add(["Images", "ImageIO", "ImageMagick", "ImageTransformations", "ImageFiltering"])
 	using Images, LinearAlgebra, SparseArrays
+	md"Libraries added"
 end
 
-# ╔═╡ a3f814ac-f46c-11ea-33d7-81d4c435aba2
-begin
-	large_image = load("img1.jpg")
-	image = imresize(large_image; ratio=0.1)
-	#image = Gray.(image)
-	#image = Gray.(rand(Float64, (5, 5)))
-end
+# ╔═╡ 045fc73c-f5bb-11ea-210d-c3a88c7b5c08
+md"# Reversing a convolution"
 
-# ╔═╡ e731fd9c-f475-11ea-0123-b5df0503c9ba
-size(image)
+# ╔═╡ ce1dd8fc-f5bb-11ea-3cf4-4b20b1250bb1
+md"## Functions"
 
-# ╔═╡ 5965dbc0-f4fa-11ea-3d29-536288bec4f6
-typeof(image)
+# ╔═╡ f1cf67d8-f5bc-11ea-0015-192f0ebb1fdf
+md"### Kernel"
 
-# ╔═╡ 2d535372-f479-11ea-0395-1d9e0339bfde
+# ╔═╡ f284c890-f5bb-11ea-30e8-abbc1f458cec
 function Kernel_uniform(shape)
 	value = 1/prod(shape)
 	return fill(value, shape)
 end
 
-# ╔═╡ 820976ec-f476-11ea-0113-d909496fa398
-begin
-	#kernel = Kernel_uniform((7, 7))
-	kernel = Kernel.gaussian((3, 3))
-	size(kernel)
-end
-
-# ╔═╡ ece7034c-f5b8-11ea-374f-c7609880175a
+# ╔═╡ fcae7582-f5bb-11ea-2b79-43f8cd3178c3
 function get_pad(kernel)
 	return (size(kernel).-1).÷2
 end
 
-# ╔═╡ 9017eb36-f47d-11ea-0ae8-f3b3bb85bf53
-begin
-	pad = Pad(:replicate, get_pad(kernel))
-	#pad = Fill(0, size(kernel))
-	filtered_pad = imfilter(image, kernel, pad, Algorithm.FIR())
-end
+# ╔═╡ e6b903c2-f5bc-11ea-0c2c-03e099517d90
+md"### Convolution and Reverse"
 
-# ╔═╡ d89f858a-f47d-11ea-20fc-ed418cc5653b
-size(filtered_pad)
-
-# ╔═╡ a636b05c-f566-11ea-1e0b-0515f16c7884
+# ╔═╡ 0966b046-f5bc-11ea-355e-a360060c4753
+md"old functions inside"
 #=
 begin
 	function get_b(img, f, pad, mat, idx)
@@ -125,7 +104,49 @@ begin
 end
 =#
 
-# ╔═╡ 64d41c96-f569-11ea-28d7-b9f8ef35d8db
+# ╔═╡ fb654aee-f5bc-11ea-35f4-3397194c8722
+md"## Example"
+
+# ╔═╡ 116fe702-f5bd-11ea-0ba9-c55263d026ba
+md"### Importing image"
+
+# ╔═╡ a3f814ac-f46c-11ea-33d7-81d4c435aba2
+begin
+	i = 2
+	
+	if i==1
+		large_image = load("monkey.jpg")
+		image = imresize(large_image; ratio=0.1)
+	elseif i==2
+		large_image = load("lena.jpg")
+		image = imresize(large_image; ratio=0.2)
+	end
+	
+	#image = Gray.(image)
+	#image = Gray.(rand(Float64, (5, 5)))
+end
+
+# ╔═╡ e731fd9c-f475-11ea-0123-b5df0503c9ba
+size(image)
+
+# ╔═╡ 5965dbc0-f4fa-11ea-3d29-536288bec4f6
+typeof(image)
+
+# ╔═╡ 1eb50ff0-f5bd-11ea-34a9-65ceeb74698a
+md"### Initializing filter"
+
+# ╔═╡ 820976ec-f476-11ea-0113-d909496fa398
+begin
+	#kernel = Kernel_uniform((7, 7))
+	kernel = Kernel.gaussian((4, 4))
+	
+	pad = Pad(:replicate, get_pad(kernel))
+	#pad = Fill(0, size(kernel))
+	
+	size(kernel)
+end
+
+# ╔═╡ 110e881e-f5bc-11ea-0a20-3dabe51098a3
 function f2mat(img, f, pad=Pad(:replicate, get_pad(kernel)))
 	input_shape = size(img)
 	input_size = prod(input_shape)
@@ -156,10 +177,7 @@ function f2mat(img, f, pad=Pad(:replicate, get_pad(kernel)))
 	return mat'
 end
 
-# ╔═╡ 3626ce80-f482-11ea-15f0-497b0ee9b3a4
-#matrix = f2mat(image, kernel, "zero")
-
-# ╔═╡ 1a26054e-f4f9-11ea-3faa-23a1ad8febd0
+# ╔═╡ 9966750a-f5bc-11ea-2402-f16ff519f56d
 function convolution(image, kernel, pad=Pad(:replicate, get_pad(kernel)))
 	matrix = f2mat(image, kernel, pad)
 	mono = (length(size(channelview(image)))==2)
@@ -173,13 +191,7 @@ function convolution(image, kernel, pad=Pad(:replicate, get_pad(kernel)))
 	end
 end
 
-# ╔═╡ 30f93266-f4fa-11ea-35d5-b7bd56cb73e3
-#convolution(image, kernel, "replicate")
-
-# ╔═╡ e2a404cc-f511-11ea-3c9d-d31aa63b143d
-
-
-# ╔═╡ 63100174-f512-11ea-3d6b-39684a9ca980
+# ╔═╡ a053dae2-f5bc-11ea-11fb-7115b2489efa
 function get_original(image, kernel, pad=Pad(:replicate, get_pad(kernel)))
 	matrix = f2mat(image, kernel, pad)
 	
@@ -198,6 +210,24 @@ function get_original(image, kernel, pad=Pad(:replicate, get_pad(kernel)))
 	end
 end
 
+# ╔═╡ 3d477c82-f5bd-11ea-2571-f5cdb9fc1525
+md"### Filtered image"
+
+# ╔═╡ 9017eb36-f47d-11ea-0ae8-f3b3bb85bf53
+filtered_pad = imfilter(image, kernel, pad, Algorithm.FIR())
+
+# ╔═╡ d89f858a-f47d-11ea-20fc-ed418cc5653b
+size(filtered_pad)
+
+# ╔═╡ 3626ce80-f482-11ea-15f0-497b0ee9b3a4
+#matrix = f2mat(image, kernel, "zero")
+
+# ╔═╡ 30f93266-f4fa-11ea-35d5-b7bd56cb73e3
+#convolution(image, kernel, "replicate")
+
+# ╔═╡ 52ae79ae-f5bd-11ea-1d9b-a5963c9bcd16
+md"### Reversing the convolution"
+
 # ╔═╡ 4bd86730-f512-11ea-1c03-bfd6d008e37a
 begin
 	estimate = false
@@ -215,26 +245,37 @@ begin
 	estimated = get_original(filtered_pad, estimated_kernel, estimated_pad)
 end
 
+# ╔═╡ 68b18282-f5bd-11ea-1801-933fb61400ab
+md"#### Original | Filtered | Recovered"
+
 # ╔═╡ 4eb55d58-f514-11ea-064c-2b8a08b3c1eb
 [image filtered_pad estimated]
 
 # ╔═╡ Cell order:
-# ╠═9ba38cfe-f46d-11ea-039b-2d11eb144c98
-# ╠═88cfc46c-f46d-11ea-21df-59c027e4b86b
+# ╟─045fc73c-f5bb-11ea-210d-c3a88c7b5c08
+# ╟─ce1dd8fc-f5bb-11ea-3cf4-4b20b1250bb1
+# ╟─88cfc46c-f46d-11ea-21df-59c027e4b86b
+# ╟─f1cf67d8-f5bc-11ea-0015-192f0ebb1fdf
+# ╟─f284c890-f5bb-11ea-30e8-abbc1f458cec
+# ╟─fcae7582-f5bb-11ea-2b79-43f8cd3178c3
+# ╟─e6b903c2-f5bc-11ea-0c2c-03e099517d90
+# ╟─0966b046-f5bc-11ea-355e-a360060c4753
+# ╟─110e881e-f5bc-11ea-0a20-3dabe51098a3
+# ╟─9966750a-f5bc-11ea-2402-f16ff519f56d
+# ╟─a053dae2-f5bc-11ea-11fb-7115b2489efa
+# ╟─fb654aee-f5bc-11ea-35f4-3397194c8722
+# ╟─116fe702-f5bd-11ea-0ba9-c55263d026ba
 # ╠═a3f814ac-f46c-11ea-33d7-81d4c435aba2
 # ╠═e731fd9c-f475-11ea-0123-b5df0503c9ba
 # ╠═5965dbc0-f4fa-11ea-3d29-536288bec4f6
-# ╠═2d535372-f479-11ea-0395-1d9e0339bfde
+# ╟─1eb50ff0-f5bd-11ea-34a9-65ceeb74698a
 # ╠═820976ec-f476-11ea-0113-d909496fa398
-# ╠═ece7034c-f5b8-11ea-374f-c7609880175a
+# ╟─3d477c82-f5bd-11ea-2571-f5cdb9fc1525
 # ╠═9017eb36-f47d-11ea-0ae8-f3b3bb85bf53
 # ╠═d89f858a-f47d-11ea-20fc-ed418cc5653b
-# ╠═a636b05c-f566-11ea-1e0b-0515f16c7884
-# ╠═64d41c96-f569-11ea-28d7-b9f8ef35d8db
 # ╠═3626ce80-f482-11ea-15f0-497b0ee9b3a4
-# ╠═1a26054e-f4f9-11ea-3faa-23a1ad8febd0
 # ╠═30f93266-f4fa-11ea-35d5-b7bd56cb73e3
-# ╟─e2a404cc-f511-11ea-3c9d-d31aa63b143d
-# ╠═63100174-f512-11ea-3d6b-39684a9ca980
+# ╟─52ae79ae-f5bd-11ea-1d9b-a5963c9bcd16
 # ╠═4bd86730-f512-11ea-1c03-bfd6d008e37a
-# ╠═4eb55d58-f514-11ea-064c-2b8a08b3c1eb
+# ╟─68b18282-f5bd-11ea-1801-933fb61400ab
+# ╟─4eb55d58-f514-11ea-064c-2b8a08b3c1eb
